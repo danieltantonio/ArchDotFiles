@@ -1,0 +1,199 @@
+## PRE INSTALLATION ##
+// Network configuration is turned on automatically by default during Pre-Installation but not Post-Installation
+
+packages to install:
+====================
+man // Manual
+sudo // Run root on normal users
+nano // Terminal text editor
+grub // Bootloader
+efibootmgr dosfstools os-prober mtools // Specifically for EFI bootloading
+networkmanager // For Internet stuff
+
+// After Post Install
+picom // Transparancy
+lxappearance // gtk themes
+alsa-utils // sound driver, add your user to the audio group
+$ sudo gpasswd -a USER audio
+
+commands to run:
+================
+useradd -m USERNAME // Add User
+EDITOR=nano visudo // Edit sudo privileges, uncomment %wheel ALL=(ALL) ALL OR %wheel ALL=(ALL) NOPASSWD: ALL
+usermod -aG wheel,audio,video,optical,storage USERNAME // Give %wheel usergroup privileges and assign user to %wheel group
+mkdir /boot/EFI // Create EFI boot directory
+mount /dev/sda1 /boot/EFI // Mount EFI partition
+grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck // Configure EFI boot partition with grub
+grub-mkconfig -o /boot/grub/grub.cfg // Configure bootloader
+
+
+-- Set the Keyboard Layout--
+============================
+// Default: en_US.UTF-8
+
+$ ls /usr/share/kbd/keymaps/**/*.map.gz // check if key layout is listed
+$ loadkeys de-latin1 // set keylayout
+
+-- Set the System Clock --
+===========================
+$ timedatectl set-ntp true // Ensure system clock is accurate
+$ timedatectl status // Check system clock status
+
+-- Partition the Disks --
+==========================
+
+$ fdisk -l // see what block devices / partitions are listed
+$ fdisk /dev/sda // start partition setup
+  - Create right kind of partition table
+  - Create mounting points
+  - Give mounting points preferred size
+  - Give mounting points right kind of partition type
+  - Write partitions to disk
+
+-- Format Partitions --
+========================
+
+$ mkfs.fat -F32 /dev/(BOOT PARTITION) // Create FAT32 filesystem example
+$ mkswap /dev/(SWAP PARTITION) // Create SWAP filesystem
+
+
+-- Mount the File Systems --
+=============================
+
+$ mount /dev/(ROOT PARTITION) /mnt // Mount root partition to mnt directory
+$ swapon /dev/(SWAP PARTITION) // Mount SWAP partition
+
+-- Install Essential Packages --
+================================
+
+$ pacstrap /mnt base linux linux-firmware
+
+-- Configure the System --
+============================
+
+$ genfstab -U /mnt >> /mnt/etc/fstab // Generate fstab defined by UUID and labels within the fstab directory
+$ arch-chroot /mnt // Change root into mnt directory. Should automatically put you into root.
+
+-- Set Time Zone --
+====================
+
+$ ln -sf /usr/share/zoneinfo/REGION/CITY /etc/localtime // Change Region to Country and City to City (obviously)
+$ hwclock --systohc // Generate clock
+
+-- Install Packages --
+=======================
+/* 
+
+Required packages to install are located at the top of this txt file. :)
+-------------------------------------------------------------------------
+
+The package manager in Arch Linux is called "pacman". To install packages use the command:
+
+$ pacman -S PACKAGENAME 
+
+*/
+
+-- Localization --
+===================
+
+$ nano /etc/locale.gen // Uncomment en_US.UTF-8 UTF-8 and other required locals
+$ locale-gen // Generate locale file
+
+$ nano /etc/locale.conf // Edit locale configuration
+LANG=en_US.UTF-8 // Set locale language
+
+// If you set the keyboard layout from before
+
+$ nano /etc/vconsole.conf // Edit the vconsole config to make changes persistent
+KEYMAP=de-latin1
+
+-- Network Configuration --
+============================
+$ nano /etc/hostname // Create and edit hostname file
+HOSTNAME // Set hostname here
+
+// Add matching entries to hosts
+$ nano /etc/hosts // Edit hosts file
+
+// Add these lines into hosts file:
+
+127.0.0.1	localhost
+::1		localhost
+127.0.1.1	HOSTNAME.localdomain  HOSTNAME
+
+-- Run Commands To Run --
+==========================
+/*
+
+Required commands are on the top of this txt file :)
+
+*/
+
+-- Set Passwords --
+====================
+// !! DONT FORGET TO UPDATE USER PASSWORD !!
+$ passwd // Sets password of logged in user (usually root by default during pre-installation)
+
+// DONE!!!
+$ exit
+$ umount -l /mnt // After exiting root bash
+$ poweroff // Self explanitory
+
+/* 
+
+Take out Arch Linux installation mount 
+Startup Arch Linux
+Begin post installation
+
+*/
+
+
+
+## POST INSTALLATION ##
+// !! Keep in mind that you can be vulnerable via SSH attacks !!
+
+-- Enable NetworkManager --
+============================
+$ systemctl start NetworkManager
+$ systemctl enable NetworkManager
+
+-- Connect to Network Wirelessly (optional) --
+===============================================
+$ nmtui
+
+-- Install Xorg --
+===================
+// Xorg is for graphics in general
+$ pacman -S xorg-server xorg-xinit
+
+-- Installing DM (Desktop Manager) --
+======================================
+$ pacman -S lightdm // Desktop Manager program
+$ pacman -S lightdm-gtk-greeter // Lockscreen
+$ pacman -S lightdm-gtk-greeter-settings // Lockscreen settings
+
+-- Enable LightDM Service --
+=============================
+$ systemctl enable lightdm
+
+-- List Enabled Services --
+============================
+$ systemctl list-unit-files --state=enabled
+
+-- Install WM or DE (WindowManager / DesktopEnvironment) --
+============================================================
+$ pacman -S i3-gaps i3status i3lock dmenu // If you want to use the i3 WM
+// WM Alternatives: dwm, awesome, bspwm, xmonad
+// If you want a DM: XFCE, KDE, Gnome
+
+-- Install a Terminal Emulator --
+==================================
+$ pacman -S alacritty // Installs alacritty terminal emulator
+// Terminal Emulator alternatives: st, rxvt-unicode, termite, terminator
+
+-- Install Web Browser and File Manager --
+===========================================
+$ pacman -S firefox // Installs firefox web browser
+$ pacman -S nautilus // Installs nautilus file manager
+
+$ reboot // Self explanitory
